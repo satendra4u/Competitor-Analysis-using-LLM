@@ -381,7 +381,7 @@ with st.container():
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     for chat in st.session_state.chat_history:
         st.markdown(f'<div class="message user-message"><strong>You:</strong> {chat["user"]}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="message bot-message"><strong>Assistant ({chat["llm"]}):</strong> {chat["bot"]}</div>', unsafe_allow_html=True)
+       # st.markdown(f'<div class="message bot-message"><strong>Assistant ({chat["llm"]}):</strong> {chat["bot"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Input container at bottom
