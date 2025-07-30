@@ -7,258 +7,357 @@ from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 import re
-from uuid import uuid4
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Set wide layout
-st.set_page_config(layout="wide", page_title="AI Chatbot", page_icon="🤖")
+# Set page config
+st.set_page_config(
+    layout="wide", 
+    page_title="AI Assistant Pro", 
+    page_icon="🚀"
+)
 
-# Custom CSS for dark mode chat styling
+# Enhanced Custom CSS with modern design
 st.markdown("""
     <style>
-    /* Dark mode colors */
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Modern dark theme variables */
     :root {
-        --bg-color: #0f172a;
-        --card-color: #1e293b;
-        --text-color: #e2e8f0;
-        --user-msg-color: #3b82f6;
-        --bot-msg-color: #334155;
-        --input-bg: #1e293b;
-        --input-border: #475569;
-        --sidebar-bg: #1e293b;
-        --button-bg: #3b82f6;
-        --button-hover: #2563eb;
-        --clear-btn-bg: #7f1d1d;
-        --clear-btn-hover: #991b1b;
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --bg-primary: #0a0e1a;
+        --bg-secondary: #1a1f2e;
+        --bg-tertiary: #252b3b;
+        --text-primary: #ffffff;
+        --text-secondary: #b4bcd0;
+        --text-muted: #6b7280;
+        --accent-blue: #3b82f6;
+        --accent-purple: #8b5cf6;
+        --accent-green: #10b981;
+        --border-color: #374151;
+        --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --shadow-heavy: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
     
-    /* Main container styling */
+    /* Base styles */
+    html, body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+    }
+    
+    /* Main app container */
     .stApp {
-        background-color: var(--bg-color);
-        color: var(--text-color);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+    }
+    
+    /* Header section - compact */
+    .header-section {
+        background: var(--primary-gradient);
+        padding: 1rem;
+        margin: -1rem -1rem 1rem -1rem;
+        border-radius: 0 0 16px 16px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .header-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     /* Chat container */
     .chat-container {
-        max-height: calc(100vh - 180px);
-        overflow-y: auto;
-        padding: 20px;
-        background-color: var(--card-color);
+        background: rgba(26, 31, 46, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        margin-bottom: 90px;
+        padding: 1.5rem;
+        margin-bottom: 100px;
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
+        box-shadow: var(--shadow-medium);
     }
     
     /* Message bubbles */
     .message {
-        padding: 12px 16px;
-        border-radius: 18px;
-        margin-bottom: 12px;
-        word-wrap: break-word;
+        padding: 0.8rem 1rem;
+        border-radius: 16px;
+        margin-bottom: 0.8rem;
+        font-size: 0.9rem;
         line-height: 1.5;
-        position: relative;
-        font-size: 15px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-light);
         max-width: fit-content;
+        animation: messageSlideIn 0.3s ease-out;
     }
     
     .user-message {
-        background-color: var(--user-msg-color);
+        background: var(--primary-gradient);
         color: white;
         margin-left: auto;
-        border-bottom-right-radius: 4px;
         max-width: 75%;
     }
     
     .bot-message {
-        background-color: var(--bot-msg-color);
-        color: var(--text-color);
+        background: rgba(37, 43, 59, 0.9);
+        color: var(--text-primary);
         margin-right: auto;
-        border-bottom-left-radius: 4px;
         max-width: 85%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Input area */
+    /* Message labels */
+    .message strong {
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.8;
+    }
+    
+    /* Fixed input container at bottom */
     .input-container {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
-        background-color: var(--card-color);
-        padding: 15px;
-        display: flex;
-        align-items: center;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-        z-index: 100;
-        gap: 10px;
+        background: rgba(26, 31, 46, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        z-index: 1000;
     }
     
-    /* Input field */
+    /* Input wrapper with send button inside */
+    .input-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Enhanced input field */
     .stTextInput > div > div > input {
-        background-color: var(--input-bg);
-        border: 1px solid var(--input-border);
-        border-radius: 24px;
-        color: var(--text-color);
-        padding: 12px 20px;
-        font-size: 15px;
-        transition: all 0.3s;
-        flex-grow: 1;
-        margin-right: 10px;
+        background: rgba(37, 43, 59, 0.9) !important;
+        border: 2px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 25px !important;
+        color: var(--text-primary) !important;
+        padding: 0.8rem 3rem 0.8rem 1.2rem !important;
+        font-size: 0.95rem !important;
+        transition: all 0.3s ease !important;
+        font-family: 'Inter', sans-serif !important;
+        width: 100% !important;
     }
     
     .stTextInput > div > div > input:focus {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        border-color: var(--user-msg-color);
+        outline: none !important;
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
     }
     
-    /* Send button */
-    .stButton > button {
-        background-color: var(--button-bg);
-        color: white;
+    .stTextInput > div > div > input::placeholder {
+        color: var(--text-muted) !important;
+    }
+    
+    /* Send button inside input */
+    .send-button {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--primary-gradient);
         border: none;
-        border-radius: 24px;
-        padding: 12px 24px;
-        font-weight: 500;
-        transition: all 0.3s;
-        height: 48px;
-        white-space: nowrap;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
     }
     
-    .stButton > button:hover {
-        background-color: var(--button-hover);
-        transform: translateY(-1px);
+    .send-button:hover {
+        transform: translateY(-50%) scale(1.05);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Tips section */
+    .tips-section {
+        background: rgba(37, 43, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        backdrop-filter: blur(10px);
+        margin-bottom: 1rem;
+    }
+    
+    .tips-section h4 {
+        color: var(--accent-blue);
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    
+    .tips-section p {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        line-height: 1.4;
+        margin-bottom: 0.3rem;
+    }
+    
+    .tips-section code {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent-blue);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: var(--sidebar-bg) !important;
+        background: var(--bg-secondary) !important;
+        border-right: 1px solid var(--border-color) !important;
     }
     
-    /* Title styling */
-    .title {
-        color: var(--text-color);
-        font-weight: 700;
-        margin-bottom: 20px;
+    [data-testid="stSidebar"] .stTextInput > div > div > input {
+        background: var(--bg-tertiary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        color: var(--text-primary) !important;
+        padding: 0.5rem !important;
     }
     
-    /* Scrollbar styling */
+    [data-testid="stSidebar"] .stButton > button {
+        background: var(--secondary-gradient) !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        width: 100% !important;
+        border: none !important;
+        color: white !important;
+    }
+    
+    /* Status indicators */
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-openai {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    
+    .status-gemini {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--accent-purple);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    
+    /* Loading indicator */
+    .loading-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin: 1rem 0;
+        justify-content: center;
+    }
+    
+    .loading-dots {
+        display: flex;
+        gap: 3px;
+    }
+    
+    .loading-dots div {
+        width: 5px;
+        height: 5px;
+        background: var(--accent-blue);
+        border-radius: 50%;
+        animation: pulse 1.4s infinite;
+    }
+    
+    .loading-dots div:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots div:nth-child(3) { animation-delay: 0.4s; }
+    
+    /* Enhanced scrollbar */
     ::-webkit-scrollbar {
-        width: 8px;
+        width: 6px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #1e293b;
-        border-radius: 10px;
+        background: transparent;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #475569;
+        background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));
         border-radius: 10px;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
-    }
-    
-    /* Animation for messages */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .message {
-        animation: fadeIn 0.3s ease-out;
-    }
-    
-    /* Clear button styling */
-    .clear-btn {
-        background-color: var(--clear-btn-bg) !important;
-        color: white !important;
-        border: none !important;
-    }
-    
-    .clear-btn:hover {
-        background-color: var(--clear-btn-hover) !important;
-    }
-    
-    /* API key input styling */
-    .stTextInput > div > div > input[type="password"] {
-        background-color: var(--input-bg);
-        border: 1px solid var(--input-border);
-        border-radius: 8px;
-        padding: 10px 15px;
-        color: var(--text-color);
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .user-message {
-            max-width: 85%;
+    /* Animations */
+    @keyframes messageSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
         }
-        .bot-message {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .header-title {
+            font-size: 1.5rem;
+        }
+        
+        .user-message, .bot-message {
             max-width: 90%;
         }
-        .stButton > button {
-            padding: 12px 16px;
+        
+        .chat-container {
+            padding: 1rem;
+            margin-bottom: 80px;
         }
-    }
-    
-    /* Add some spacing between messages */
-    .message + .message {
-        margin-top: 8px;
+        
+        .input-container {
+            padding: 0.8rem;
+        }
     }
     </style>
-    <script>
-    // Auto-scroll to bottom of chat
-    function scrollToBottom() {
-        const chatContainer = document.querySelector('.chat-container');
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    }
-    
-    // Handle Enter key press
-    function setupEnterKey() {
-        const input = document.querySelector('.stTextInput input');
-        if (input) {
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const sendButton = document.querySelector('.stButton button');
-                    if (sendButton) {
-                        sendButton.click();
-                    }
-                }
-            });
-        }
-    }
-    
-    // Initialize when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        scrollToBottom();
-        setupEnterKey();
-        
-        // Also scroll when messages are added
-        const observer = new MutationObserver(function() {
-            scrollToBottom();
-            setupEnterKey(); // Re-setup in case Streamlit recreates elements
-        });
-        
-        const chatContainer = document.querySelector('.chat-container');
-        if (chatContainer) {
-            observer.observe(chatContainer, { childList: true, subtree: true });
-        }
-    });
-    
-    // Re-setup when Streamlit reruns
-    if (typeof Streamlit !== 'undefined') {
-        Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, function() {
-            setupEnterKey();
-        });
-    }
-    </script>
 """, unsafe_allow_html=True)
 
 # Function to calculate matching score based on format
@@ -270,172 +369,367 @@ def calculate_format_score(response, is_competitor_query=False):
     max_score = 100.0
     
     if is_competitor_query:
-        # Expected format: Brief intro, regional headers (##), bullet points with "Company (Country) – Focus"
         regions = [
             "North America", "Europe", "Asia-Pacific", "Middle East", "Latin America", "Africa"
         ]
         
-        # Check for brief intro (at least one paragraph before first header)
         if re.search(r"^[^\n#]+\n", response):
             score += 20.0
         
-        # Check for regional headers
         headers_found = sum(1 for region in regions if f"## {region}" in response)
         score += (headers_found / len(regions)) * 30.0
         
-        # Check for bullet points in the format "Company (Country) – Focus"
         bullet_pattern = r"^\s*[-*]\s+([^\(]+)\s*\(([^\)]+)\)\s*–\s*([^\n]+)$"
         bullets = re.findall(bullet_pattern, response, re.MULTILINE)
         if bullets:
-            score += min(len(bullets) / 5, 1.0) * 30.0  # Assume at least 5 bullets for full score
+            score += min(len(bullets) / 5, 1.0) * 30.0
         
-        # Check for brief conclusion (paragraph after last bullet)
         if re.search(r"\n\n[^\n#]+$", response):
             score += 20.0
             
     else:
-        # For general questions, expect a conversational paragraph format
         paragraphs = [p.strip() for p in response.split("\n\n") if p.strip()]
         if paragraphs:
-            score += min(len(paragraphs), 3) * 20.0  # Up to 3 paragraphs for structure
-            if len(response.split()) > 50:  # Ensure some meaningful length
+            score += min(len(paragraphs), 3) * 20.0
+            if len(response.split()) > 50:
                 score += 20.0
-            if not re.search(r"^[#-*]", response, re.MULTILINE):  # No headers or bullets
+            if not re.search(r"^[#-*]", response, re.MULTILINE):
                 score += 20.0
                 
     return score / max_score * 100
 
-# Initialize conversation chains for both LLMs
+# Enhanced conversation chains with detailed prompt
 @st.cache_resource
 def get_conversation_chains():
-    prompt_template = PromptTemplate(
+    enhanced_prompt_template = PromptTemplate(
         input_variables=["input", "history"],
-        template="""You are a helpful assistant, answer in as detail as possible. If the user asks for competitors of a company, provide a detailed list of competitors organized by the following geographical regions: North America, Latin America, Europe, Asia-Pacific (APAC), Middle East and North Africa (MENA), Sub-Saharan Africa, and Russia and CIS. For each competitor, include the company name, country, and a brief description of their focus (e.g., aerospace, defense, etc.). If no competitors are identified in a region, list the regions and explicitly state: "No competitors available in this region to the best of my knowledge." Format the response using markdown with region headers (e.g., ## Region Name) and bullet points for each competitor. Start with a brief introduction and end with a brief conclusion. For all other queries, respond naturally and concisely as a conversational AI. Use the current conversation history: {history}\nUser input: {input}\nAssistant response:"""
-    )
-    
-    openai_llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.7, openai_api_key=os.getenv("OPENAI_API_KEY"))
-    gemini_llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.7, google_api_key=os.getenv("GOOGLE_API_KEY"))
-    
-    openai_memory = ConversationBufferMemory()
-    gemini_memory = ConversationBufferMemory()
-    
-    openai_conversation = ConversationChain(
-        llm=openai_llm,
-        memory=openai_memory,
-        verbose=False,
-        prompt=prompt_template
-    )
-    gemini_conversation = ConversationChain(
-        llm=gemini_llm,
-        memory=gemini_memory,
-        verbose=False,
-        prompt=prompt_template
-    )
-    
-    return {"OpenAI": openai_conversation, "Gemini": gemini_conversation}
+        template="""You are an expert AI assistant with deep knowledge across all domains. Your responses should be comprehensive, well-structured, and highly informative.
 
-# Sidebar for API key inputs only
-with st.sidebar:
-    st.markdown("<h2 style='color: var(--text-color);'>Settings ⚙️</h2>", unsafe_allow_html=True)
-    
-    os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY") or st.text_input(
-        "OpenAI API Key:", 
-        type="password",
-        help="Get your API key from https://platform.openai.com/api-keys"
+**RESPONSE GUIDELINES:**
+
+**For Competitor Analysis Queries:**
+When a user asks about competitors of any company, provide an extremely detailed and comprehensive analysis following this EXACT structure:
+
+1. **Introduction (2-3 sentences):** Briefly introduce the company and the competitive landscape overview.
+
+2. **Regional Analysis:** Organize competitors by these geographical regions:
+   - **North America** (US, Canada, Mexico)
+   - **Europe** (EU countries, UK, Norway, Switzerland, etc.)
+   - **Asia-Pacific** (China, Japan, India, South Korea, Australia, Southeast Asia)
+   - **Middle East & North Africa** (UAE, Saudi Arabia, Israel, Egypt, etc.)
+   - **Latin America** (Brazil, Argentina, Chile, Colombia, etc.)
+   - **Sub-Saharan Africa** (South Africa, Nigeria, Kenya, etc.)
+   - **Russia & CIS** (Russia, Kazakhstan, Ukraine, etc.)
+
+3. **Format for each region:**
+   ```
+   ## [Region Name]
+   [2-3 sentence description of the competitive landscape in this region, market characteristics, and key trends]
+   
+   - **[Company Name] ([Country])** – [Detailed description of company focus, specialties, market position, key products/services, and competitive advantages. Include revenue size if known (small/medium/large), founding year, and any notable achievements or market share information]
+   - **[Next company]** – [Similar detailed description]
+   ```
+
+4. **For regions with no competitors:** Still include the region header and state: "No significant competitors identified in this region based on current market analysis."
+
+5. **Conclusion (2-3 sentences):** Summarize the global competitive landscape and key market dynamics.
+
+**For General Queries:**
+Provide comprehensive, well-researched responses with:
+- Clear structure with logical flow
+- Detailed explanations with context
+- Multiple perspectives when relevant
+- Practical examples and applications
+- Current industry insights when applicable
+- Professional yet conversational tone
+
+**QUALITY STANDARDS:**
+- Use specific details, numbers, and facts whenever possible
+- Include recent developments and market trends
+- Explain technical concepts clearly
+- Provide actionable insights
+- Maintain accuracy and cite general knowledge appropriately
+- Use professional language with appropriate technical terminology
+- Elaborate on subtopics and provide comprehensive coverage of all aspects
+
+**Conversation History:** {history}
+
+**User Query:** {input}
+
+**Your Response:**"""
     )
-    os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY") or st.text_input(
-        "Google API Key:", 
-        type="password",
-        help="Get your API key from https://ai.google.dev/"
-    )
     
-    # Add clear chat history button in the sidebar
-    if st.button("Clear Chat History", key="clear_chat", help="Start a new conversation"):
-        st.session_state.chat_history = []
-        st.session_state.conversation_chains = get_conversation_chains()
-        st.session_state.input_key += 1
-        st.rerun()
-    
+    try:
+        chains = {}
+        
+        # Initialize OpenAI if API key is available
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            openai_llm = ChatOpenAI(
+                model_name="gpt-3.5-turbo", 
+                temperature=0.3, 
+                openai_api_key=openai_key,
+                max_tokens=2000
+            )
+            openai_memory = ConversationBufferMemory(return_messages=True)
+            chains["OpenAI"] = ConversationChain(
+                llm=openai_llm,
+                memory=openai_memory,
+                verbose=False,
+                prompt=enhanced_prompt_template
+            )
+        
+        # Initialize Gemini if API key is available
+        google_key = os.getenv("GOOGLE_API_KEY")
+        if google_key:
+            gemini_llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash", 
+                temperature=0.3, 
+                google_api_key=google_key,
+                max_output_tokens=2000
+            )
+            gemini_memory = ConversationBufferMemory(return_messages=True)
+            chains["Gemini"] = ConversationChain(
+                llm=gemini_llm,
+                memory=gemini_memory,
+                verbose=False,
+                prompt=enhanced_prompt_template
+            )
+        
+        return chains
+    except Exception as e:
+        st.error(f"Error initializing conversation chains: {str(e)}")
+        return {}
 
-# Initialize session state
-if "conversation_chains" not in st.session_state:
-    st.session_state.conversation_chains = get_conversation_chains()
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "input_key" not in st.session_state:
-    st.session_state.input_key = 0
-
-# Main app area
-st.markdown("<h1 class='title'>AI Chat Assistant 🤖</h1>", unsafe_allow_html=True)
-
+# Compact header section
 st.markdown("""
-    <div style="color: #94a3b8; font-size: 14px;">
-    <p><strong>Tip:</strong> Ask about company competitors to get a detailed regional analysis.</p>
-    <p>Example: "What are the competitors of Boeing?"</p>
+    <div class="header-section">
+        <h1 class="header-title">🚀 AI Assistant Pro</h1>
     </div>
 """, unsafe_allow_html=True)
-st.markdown("---")
 
-# Chat history display
-with st.container():
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    for chat in st.session_state.chat_history:
-        st.markdown(f'<div class="message user-message"><strong>You:</strong> {chat["user"]}</div>', unsafe_allow_html=True)
-       # st.markdown(f'<div class="message bot-message"><strong>Assistant ({chat["llm"]}):</strong> {chat["bot"]}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+# Main layout with columns
+col1, col2 = st.columns([3, 1])
 
-# Input container at bottom
-with st.container():
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+with col2:
+    # Pro Tips section on the right
+    st.markdown("""
+        <div class="tips-section">
+            <h4>💡 Pro Tips</h4>
+            <p><strong>🎯 Competitor Analysis:</strong> Ask <code>"What are the competitors of [Company]?"</code></p>
+            <p><strong>📊 Market Research:</strong> Request industry analysis and trends</p>
+            <p><strong>🔍 Deep Dive:</strong> Ask follow-up questions for details</p>
+            <p><strong>💼 Examples:</strong> "Tesla competitors", "Boeing rivals"</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Sidebar for API keys (only if not in .env)
+with st.sidebar:
+    st.markdown("### ⚙️ Settings")
     
-    col1, col2 = st.columns([5, 1])
+    # Check and handle API keys
+    openai_key = os.getenv("OPENAI_API_KEY")
+    google_key = os.getenv("GOOGLE_API_KEY")
     
-    with col1:
-        user_input = st.text_input(
-            "Type your message...",
-            key=f"input_{st.session_state.input_key}",
-            label_visibility="collapsed",
-            placeholder="Ask about company competitors or anything else..."
+    # Only show input if key not found in .env
+    if not openai_key:
+        openai_input = st.text_input(
+            "OpenAI API Key:", 
+            type="password",
+            help="Get your API key from https://platform.openai.com/api-keys",
+            placeholder="sk-..."
         )
+        if openai_input:
+            os.environ["OPENAI_API_KEY"] = openai_input
     
-    with col2:
-        send_button = st.button("Send", use_container_width=True)
+    if not google_key:
+        google_input = st.text_input(
+            "Google API Key:", 
+            type="password",
+            help="Get your API key from https://ai.google.dev/",
+            placeholder="AIza..."
+        )
+        if google_input:
+            os.environ["GOOGLE_API_KEY"] = google_input
     
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# Handle user input
-if (send_button or st.session_state.get("enter_pressed", False)) and user_input:
-    try:
-        # Check if the query is about competitors
-        is_competitor_query = "competitor" in user_input.lower()
-        
-        # Get responses from both LLMs
-        responses = {}
-        for llm_name, chain in st.session_state.conversation_chains.items():
-            response = chain.predict(input=user_input)
-            responses[llm_name] = response
-        
-        # Calculate format matching scores
-        scores = {}
-        for llm_name, response in responses.items():
-            score = calculate_format_score(response, is_competitor_query)
-            scores[llm_name] = score
-        
-        # Select the response with the highest score
-        best_llm = max(scores, key=scores.get)
-        best_response = responses[best_llm]
-        
-        # Append to chat history
-        st.session_state.chat_history.append({
-            "user": user_input,
-            "bot": best_response,
-            "llm": best_llm
-        })
-        
-        # Clear input by updating key
-        st.session_state.input_key += 1
-        st.session_state.enter_pressed = False
+    st.markdown("---")
+    
+    # Clear chat button
+    if st.button("🗑️ Clear Chat", help="Start fresh", use_container_width=True):
+        st.session_state.chat_history = []
+        if 'conversation_chains' in st.session_state:
+            st.session_state.conversation_chains = get_conversation_chains()
+        st.session_state.input_key = st.session_state.get('input_key', 0) + 1
         st.rerun()
+    
+    # Model status
+    st.markdown("### 🤖 Models")
+    openai_status = "🟢 Ready" if os.getenv("OPENAI_API_KEY") else "🔴 No Key"
+    google_status = "🟢 Ready" if os.getenv("GOOGLE_API_KEY") else "🔴 No Key"
+    st.markdown(f"**OpenAI:** {openai_status}")
+    st.markdown(f"**Gemini:** {google_status}")
+
+with col1:
+    # Initialize session state
+    if "conversation_chains" not in st.session_state:
+        st.session_state.conversation_chains = get_conversation_chains()
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    if "input_key" not in st.session_state:
+        st.session_state.input_key = 0
+    if "is_processing" not in st.session_state:
+        st.session_state.is_processing = False
+
+    # Chat history display
+    if st.session_state.chat_history:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for chat in st.session_state.chat_history:
+            # User message
+            st.markdown(f'''
+                <div class="message user-message">
+                    <strong>You</strong><br>
+                    {chat["user"]}
+                </div>
+            ''', unsafe_allow_html=True)
+            
+            # Bot message with model indicator
+            model_indicator = f'<span class="status-indicator status-{chat["llm"].lower()}">{chat["llm"]}</span>'
+            st.markdown(f'''
+                <div class="message bot-message">
+                    <strong>AI Assistant {model_indicator}</strong><br>
+                    {chat["bot"]}
+                </div>
+            ''', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        # Welcome message
+        st.markdown('''
+            <div class="chat-container">
+                <div class="message bot-message" style="margin: 2rem auto; text-align: center; max-width: 500px;">
+                    <strong>👋 Welcome to AI Assistant Pro!</strong><br><br>
+                    I'm here to help with competitor analysis, market research, and detailed insights across any industry or topic.
+                    <br><br>
+                    Try asking about competitors of your favorite companies!
+                </div>
+            </div>
+        ''', unsafe_allow_html=True)
+
+    # Processing indicator
+    if st.session_state.is_processing:
+        st.markdown('''
+            <div class="loading-indicator">
+                <span>🤖 AI is thinking</span>
+                <div class="loading-dots">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+        ''', unsafe_allow_html=True)
+
+# Fixed input container at bottom
+st.markdown('<div class="input-container">', unsafe_allow_html=True)
+st.markdown('<div class="input-wrapper">', unsafe_allow_html=True)
+
+# Input field
+user_input = st.text_input(
+    "Message",
+    key=f"input_{st.session_state.input_key}",
+    label_visibility="collapsed",
+    placeholder="Ask about competitors, market analysis, or anything else...",
+    disabled=st.session_state.is_processing
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Handle input processing
+if user_input and user_input.strip() and not st.session_state.is_processing:
+    # Check if API keys are available
+    if not os.getenv("OPENAI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
+        st.error("⚠️ Please provide at least one API key to continue.")
+    else:
+        st.session_state.is_processing = True
         
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        try:
+            # Check if the query is about competitors
+            is_competitor_query = any(keyword in user_input.lower() for keyword in [
+                "competitor", "competition", "rival", "versus", "vs", "compare", "competing"
+            ])
+            
+            # Get responses from available LLMs
+            responses = {}
+            
+            for llm_name, chain in st.session_state.conversation_chains.items():
+                try:
+                    if ((llm_name == "OpenAI" and os.getenv("OPENAI_API_KEY")) or 
+                        (llm_name == "Gemini" and os.getenv("GOOGLE_API_KEY"))):
+                        response = chain.predict(input=user_input)
+                        responses[llm_name] = response
+                except Exception as e:
+                    st.error(f"Error with {llm_name}: {str(e)}")
+            
+            if responses:
+                # Calculate format matching scores
+                scores = {}
+                for llm_name, response in responses.items():
+                    score = calculate_format_score(response, is_competitor_query)
+                    scores[llm_name] = score
+                
+                # Select the response with the highest score
+                best_llm = max(scores, key=scores.get)
+                best_response = responses[best_llm]
+                
+                # Append to chat history
+                st.session_state.chat_history.append({
+                    "user": user_input,
+                    "bot": best_response,
+                    "llm": best_llm
+                })
+                
+                # Clear input by updating key
+                st.session_state.input_key += 1
+        
+        except Exception as e:
+            st.error(f"❌ An error occurred: {str(e)}")
+        
+        finally:
+            st.session_state.is_processing = False
+            st.rerun()
+
+# JavaScript for Enter key and auto-scroll
+st.markdown("""
+    <script>
+    function handleEnterKey() {
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                e.preventDefault();
+                // Trigger Streamlit to process the input
+                e.target.blur();
+                e.target.focus();
+            }
+        });
+    }
+    
+    function scrollToBottom() {
+        setTimeout(function() {
+            const chatContainer = document.querySelector('.chat-container');
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }, 100);
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        handleEnterKey();
+        scrollToBottom();
+    });
+    
+    // Handle Streamlit updates
+    window.addEventListener('load', function() {
+        handleEnterKey();
+        scrollToBottom();
+    });
+    </script>
+""", unsafe_allow_html=True)
