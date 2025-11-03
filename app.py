@@ -459,42 +459,51 @@ Provide comprehensive, well-researched responses with:
 **Your Response:**"""
     )
     
+    chains = {}
+    
     try:
-        chains = {}
-        
         # Initialize OpenAI if API key is available
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
-            openai_llm = ChatOpenAI(
-                model_name="gpt-4.1", 
-                temperature=0.3, 
-                openai_api_key=openai_key,
-                max_tokens=8000
-            )
-            openai_memory = ConversationBufferMemory(return_messages=True)
-            chains["OpenAI"] = ConversationChain(
-                llm=openai_llm,
-                memory=openai_memory,
-                verbose=False,
-                prompt=enhanced_prompt_template
-            )
+            try:
+                openai_llm = ChatOpenAI(
+                    model_name="gpt-4o", 
+                    temperature=0.3, 
+                    openai_api_key=openai_key,
+                    max_tokens=8000
+                )
+                openai_memory = ConversationBufferMemory(return_messages=True)
+                chains["OpenAI"] = ConversationChain(
+                    llm=openai_llm,
+                    memory=openai_memory,
+                    verbose=False,
+                    prompt=enhanced_prompt_template
+                )
+                print("✅ OpenAI initialized successfully")
+            except Exception as e:
+                st.error(f"❌ OpenAI initialization error: {str(e)}")
+                print(f"❌ OpenAI error: {str(e)}")
         
         # Initialize Gemini if API key is available
         google_key = os.getenv("GOOGLE_API_KEY")
         if google_key:
-            gemini_llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash", 
-                temperature=0.3, 
-                google_api_key=google_key,
-                max_output_tokens=8000
-            )
-            gemini_memory = ConversationBufferMemory(return_messages=True)
-            chains["Gemini"] = ConversationChain(
-                llm=gemini_llm,
-                memory=gemini_memory,
-                verbose=False,
-                prompt=enhanced_prompt_template
-            )
+            try:
+                gemini_llm = ChatGoogleGenerativeAI(
+                    model="gemini-1.5-flash",  # FIXED: Changed from gemini-2.5-flash
+                    temperature=0.3, 
+                    google_api_key=google_key
+                )
+                gemini_memory = ConversationBufferMemory(return_messages=True)
+                chains["Gemini"] = ConversationChain(
+                    llm=gemini_llm,
+                    memory=gemini_memory,
+                    verbose=False,
+                    prompt=enhanced_prompt_template
+                )
+                print("✅ Gemini initialized successfully")
+            except Exception as e:
+                st.error(f"❌ Gemini initialization error: {str(e)}")
+                print(f"❌ Gemini error: {str(e)}")
         
         return chains
     except Exception as e:
@@ -666,8 +675,10 @@ if user_input and user_input.strip() and not st.session_state.is_processing:
                         (llm_name == "Gemini" and os.getenv("GOOGLE_API_KEY"))):
                         response = chain.predict(input=user_input)
                         responses[llm_name] = response
+                        print(f"✅ Got response from {llm_name}")
                 except Exception as e:
                     st.error(f"Error with {llm_name}: {str(e)}")
+                    print(f"❌ Error with {llm_name}: {str(e)}")
             
             if responses:
                 # Calculate format matching scores
@@ -675,6 +686,7 @@ if user_input and user_input.strip() and not st.session_state.is_processing:
                 for llm_name, response in responses.items():
                     score = calculate_format_score(response, is_competitor_query)
                     scores[llm_name] = score
+                    print(f"Score for {llm_name}: {score}")
                 
                 # Select the response with the highest score
                 best_llm = max(scores, key=scores.get)
@@ -692,6 +704,7 @@ if user_input and user_input.strip() and not st.session_state.is_processing:
         
         except Exception as e:
             st.error(f"❌ An error occurred: {str(e)}")
+            print(f"❌ General error: {str(e)}")
         
         finally:
             st.session_state.is_processing = False
