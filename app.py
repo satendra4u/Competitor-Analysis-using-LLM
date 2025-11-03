@@ -466,10 +466,10 @@ Provide comprehensive, well-researched responses with:
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
             openai_llm = ChatOpenAI(
-                model_name="gpt-3.5-turbo", 
+                model_name="gpt-4.1", 
                 temperature=0.3, 
                 openai_api_key=openai_key,
-                max_tokens=20000
+                max_tokens=8000
             )
             openai_memory = ConversationBufferMemory(return_messages=True)
             chains["OpenAI"] = ConversationChain(
@@ -483,10 +483,10 @@ Provide comprehensive, well-researched responses with:
         google_key = os.getenv("GOOGLE_API_KEY")
         if google_key:
             gemini_llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash", 
+                model="gemini-2.5-flash", 
                 temperature=0.3, 
                 google_api_key=google_key,
-                max_output_tokens=20000
+                max_output_tokens=8000
             )
             gemini_memory = ConversationBufferMemory(return_messages=True)
             chains["Gemini"] = ConversationChain(
